@@ -47,7 +47,10 @@ func (h HttpReq) Get() error {
 			r.Header.Set(k, v)
 		}
 	}
+	return h.clientDo(r)
+}
 
+func (h HttpReq) clientDo(r *http.Request) error {
 	c := http.Client{}
 	res, err := c.Do(r)
 	if err != nil {
