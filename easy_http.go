@@ -9,16 +9,19 @@ import (
 )
 
 type HttpReq struct {
+	Method        string
 	Url           string
 	Values        map[string]string
 	Header        map[string]string
 	ReqData       interface{}
-	Res           interface{}
+	ResData       interface{}
+	ResHeader     url.Values
+	StatusCode    int
 	MarshalFunc   func(v interface{}) ([]byte, error)      // default json.Marshal
 	UnMarshalFunc func(buf []byte, dest interface{}) error // default json.Marshal
 }
 
-func (h HttpReq) Get() error {
+func (h *HttpReq) Do() error {
 	if h.MarshalFunc == nil {
 		h.MarshalFunc = json.Marshal
 	}
@@ -37,7 +40,7 @@ func (h HttpReq) Get() error {
 	}
 
 	url := h.Url + "?" + vs.Encode()
-	r, err := http.NewRequest("GET", url, bytes.NewReader(body))
+	r, err := http.NewRequest(h.Method, url, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -50,18 +53,22 @@ func (h HttpReq) Get() error {
 	return h.clientDo(r)
 }
 
-func (h HttpReq) clientDo(r *http.Request) error {
+func (h *HttpReq) clientDo(r *http.Request) error {
 	c := http.Client{}
 	res, err := c.Do(r)
 	if err != nil {
 		return err
 	}
+
+	h.ResHeader = url.Values(res.Header)
+	h.StatusCode = res.StatusCode
+
 	buf, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}
 	defer res.Body.Close()
 
-	err = h.UnMarshalFunc(buf, h.Res)
+	err = h.UnMarshalFunc(buf, h.ResData)
 	return err
 }
