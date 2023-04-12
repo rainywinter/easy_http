@@ -42,6 +42,12 @@ func (h HttpReq) Get() error {
 		return err
 	}
 
+	if len(h.Header) != 0 {
+		for k, v := range h.Header {
+			r.Header.Set(k, v)
+		}
+	}
+
 	c := http.Client{}
 	res, err := c.Do(r)
 	if err != nil {
